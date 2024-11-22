@@ -19,8 +19,8 @@ jobs:
     - name: Build Docker image
       run: docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest .
 
-    - name: Scan Docker image for vulnerabilities with Trivy
-      uses: aquasecurity/trivy-action@v0.25.0
+    - name: Run Trivy
+      uses: aquasecurity/trivy-action@latest
       with:
         image-ref: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
         severity: HIGH,CRITICAL
