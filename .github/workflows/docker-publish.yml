@@ -19,12 +19,18 @@ jobs:
     - name: Build Docker image
       run: docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest .
 
-    - name: Run Trivy
+    - name: Download Trivy DB
+      run: |
+        mkdir -p ~/.cache/trivy/db
+        trivy --download-db-only
+
+    - name: Scan Docker image for vulnerabilities with Trivy
       uses: aquasecurity/trivy-action@0.28.0
       with:
         image-ref: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
         severity: HIGH,CRITICAL
         format: 'table'
+        trivy-db: ~/.cache/trivy/db  # Utiliser la base de données locale téléchargée
 
     - name: Push Docker image
       run: docker push ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
