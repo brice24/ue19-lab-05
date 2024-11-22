@@ -4,14 +4,16 @@ on:
   push:
     branches:
       - main
+  pull_request:
 
 jobs:
   build:
-    runs-on: ubuntu-latest  # Utilisation de l'environnement Ubuntu pour GitHub Actions
+    name: Build and Scan Docker Image
+    runs-on: ubuntu-20.04
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     - name: Log in to GitHub Container Registry
       run: echo "${{ secrets.GHCR_PAT }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -19,25 +21,13 @@ jobs:
     - name: Build Docker image
       run: docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest .
 
-    - name: Install Trivy
-      run: |
-        # Update and install dependencies
-        sudo apt-get update
-        sudo apt-get install -y wget
-        # Download and install Trivy
-        wget https://github.com/aquasecurity/trivy/releases/download/v0.29.2/trivy_0.29.2_Linux-64bit.deb
-        sudo dpkg -i trivy_0.29.2_Linux-64bit.deb
-
-    - name: Download Trivy DB (Vulnerability Database)
-      run: |
-        # Create cache folder and download the vulnerability DB
-        mkdir -p ~/.cache/trivy/db
-        trivy --download-db-only
-
-    - name: Scan Docker image for vulnerabilities with Trivy
-      run: |
-        # Scan the image with Trivy
-        trivy image ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest --severity HIGH,CRITICAL --format table
+    - name: Run Trivy vulnerability scanner on Docker image
+      uses: aquasecurity/trivy-action@0.28.0
+      with:
+        scan-type: 'image'
+        image-ref: 'ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest'
+        severity: 'HIGH,CRITICAL'
 
     - name: Push Docker image to GitHub Packages
+      if: success() # Cette étape s'exécute seulement si le scan Trivy est réussi
       run: docker push ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
