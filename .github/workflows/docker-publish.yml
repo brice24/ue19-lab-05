@@ -1,4 +1,4 @@
-name: Build and Publish Docker Image
+name: Build, Scan, and Publish Docker Image
 
 on:
   push:
@@ -18,6 +18,11 @@ jobs:
 
     - name: Build Docker image
       run: docker build -t ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest .
+
+    - name: Scan Docker image for vulnerabilities with Trivy
+      uses: aquasecurity/trivy-action@v0.4.0
+      with:
+        image: ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
 
     - name: Push Docker image
       run: docker push ghcr.io/${{ github.repository_owner }}/${{ github.repository }}:latest
